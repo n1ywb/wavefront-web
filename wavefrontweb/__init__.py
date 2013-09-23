@@ -1,11 +1,40 @@
+import gevent.monkey
+gevent.monkey.patch_all()
+
 from pyramid.config import Configurator
 from sqlalchemy import engine_from_config
+from wavefront.controller import App as WfController
+
+import logging
+
+from antelope import brttpkt
+
+from wavefront.test import make_mock_proc_orb, makepkt
+
+
+log = logging.getLogger('wavefront-web')
 
 from .models import (
     DBSession,
     Base,
     )
 
+
+import sys
+
+def _janitor(src):
+    log.critical("Waveform controller died")
+    sys.exit(1)
+
+for n in xrange(2):
+    brttpkt.get_rvals.appendleft((n, 'foobar', n*5, makepkt(n*5)))
+
+wfcontroller = WfController()
+wfcontroller.link_exception(_janitor)
+orb = wfcontroller.add_orb('')
+orb.add_binner('channet_chansta_chanchan_chanloc', twin=10.0, tbin=5.0)
+#make_mock_proc_orb(2, wfcontroller, orb)
+wfcontroller.start()
 
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
@@ -20,4 +49,5 @@ def main(global_config, **settings):
     config.add_route('socketio', 'socket.io/*remaining')
     config.scan()
     return config.make_wsgi_app()
+
 
