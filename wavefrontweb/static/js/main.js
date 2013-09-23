@@ -3,6 +3,9 @@ angular.module('wavefrontweb', [])
         console.log('WavefrontWebController Initialized');
         // $socketio.on('evnam', function(data) { ... } );
         // $socketio.emit('evname', data);
+        $socketio.on('update', function(data) {
+            console.log("Update: " + data.update);
+        });
     })
 
     .factory("$socketio", function($rootScope) {

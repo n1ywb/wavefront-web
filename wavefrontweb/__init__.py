@@ -1,6 +1,8 @@
 import gevent.monkey
 gevent.monkey.patch_all()
 
+from gevent.queue import Queue
+
 from pyramid.config import Configurator
 from sqlalchemy import engine_from_config
 from wavefront.controller import App as WfController
@@ -29,9 +31,14 @@ def _janitor(src):
 for n in xrange(2):
     brttpkt.get_rvals.appendleft((n, 'foobar', n*5, makepkt(n*5)))
 
+queue = Queue()
+
+def cb(update):
+    queue.put(update)
+
 wfcontroller = WfController()
 wfcontroller.link_exception(_janitor)
-orb = wfcontroller.add_orb('')
+orb = wfcontroller.add_orb('', cb)
 orb.add_binner('channet_chansta_chanchan_chanloc', twin=10.0, tbin=5.0)
 #make_mock_proc_orb(2, wfcontroller, orb)
 wfcontroller.start()

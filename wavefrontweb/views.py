@@ -15,6 +15,7 @@ import logging
 
 log = logging.getLogger('views')
 
+from wavefrontweb import queue
 
 class WavefrontNamespace(BaseNamespace):
     def initialize(self):
@@ -22,6 +23,16 @@ class WavefrontNamespace(BaseNamespace):
         # self.emit
         # self.spawn
         # self.session['key']
+        self.spawn(self.wfdata_greenlet)
+
+    def wfdata_greenlet(self):
+        try:
+            while True:
+                update = queue.get()
+                self.emit('update', {'update': str(update)})
+        finally:
+            return False
+            # how to set unsuccessful?
 
 
 @view_config(route_name='home', renderer='templates/index.html')
