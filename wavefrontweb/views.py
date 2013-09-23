@@ -3,19 +3,35 @@ from pyramid.view import view_config
 
 from sqlalchemy.exc import DBAPIError
 
+from socketio.namespace import BaseNamespace
+from socketio import socketio_manage
+
 from .models import (
     DBSession,
     MyModel,
     )
 
+import logging
+
+log = logging.getLogger('views')
+
+
+class WavefrontNamespace(BaseNamespace):
+    def initialize(self):
+        log.info("Initializing namespace")
+        # self.emit
+        # self.spawn
+        # self.session['key']
+
 
 @view_config(route_name='home', renderer='templates/index.html')
 def my_view(request):
-    try:
-        one = DBSession.query(MyModel).filter(MyModel.name == 'one').first()
-    except DBAPIError:
-        return Response(conn_err_msg, content_type='text/plain', status_int=500)
-    return {'one': one, 'project': 'wavefront-web'}
+#    try:
+#        one = DBSession.query(MyModel).filter(MyModel.name == 'one').first()
+#    except DBAPIError:
+#        return Response(conn_err_msg, content_type='text/plain', status_int=500)
+#    return {'one': one, 'project': 'wavefront-web'}
+    return {'project': 'wavefront-web'}
 
 conn_err_msg = """\
 Pyramid is having a problem using your SQL database.  The problem
@@ -32,4 +48,10 @@ might be caused by one of the following things:
 After you fix the problem, please restart the Pyramid application to
 try it again.
 """
+
+@view_config(route_name="socketio")
+def socketio(request):
+    socketio_manage(request.environ, {"/wavefront": WavefrontNamespace},
+                    request=request)
+    return Response('')
 
