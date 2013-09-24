@@ -38,11 +38,13 @@ queue = Queue()
 def cb(update):
     queue.put(update)
 
+twin = 600
+
 wfcontroller = WfController()
 wfcontroller.link_exception(_janitor)
 orb = wfcontroller.add_orb('anfexport:usarrayTA', cb, select='TA_058A.*',
-        tafter=time.time() - 600)
-orb.add_binner('TA_058A_BHN', twin=600.0, tbin=1.0)
+        tafter=time.time() - twin)
+orb.add_binner('TA_058A_BHN', twin=twin, tbin=1.0)
 #make_mock_proc_orb(2, wfcontroller, orb)
 wfcontroller.start()
 
