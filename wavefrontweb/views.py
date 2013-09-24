@@ -14,9 +14,10 @@ from .models import (
 import logging
 
 log = logging.getLogger('views')
+log.setLevel(logging.DEBUG)
 
 from gevent.queue import Queue
-from wavefront import publisher
+from wavefrontweb import publisher, orb
 
 class WavefrontNamespace(BaseNamespace):
     def initialize(self):
@@ -31,6 +32,11 @@ class WavefrontNamespace(BaseNamespace):
             log.info('starting wfdata greenlet')
             queue = Queue()
             with publisher.subscription(queue):
+                # make it dump the buffer into our queue somehow
+                log.info('dumping history')
+                store = iter(orb.binners.binners['TA_058A_BHN']).next().store
+                self.emit('update', {'update': [bin.asdict() for bin in store.itervalues()]})
+                log.info('entering main loop')
                 while True:
                     update = queue.get()
                     log.info(update)
