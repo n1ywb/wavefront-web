@@ -1,0 +1,21 @@
+/* http://bl.ocks.org/mbostock/3884914 */
+
+body {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.x.axis path {
+  display: none;
+}
+
+.area {
+  fill: steelblue;
+}
+

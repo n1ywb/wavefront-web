@@ -29,7 +29,15 @@ class WavefrontNamespace(BaseNamespace):
         try:
             while True:
                 update = queue.get()
-                self.emit('update', {'update': str(update)})
+                binner, update = update
+                update = [dict(
+                    timestamp=b.timestamp,
+                    max=b.max,
+                    min=b.min,
+                    mean=b.mean,
+                    nsamples=b.nsamples) for b in update]
+                print update
+                self.emit('update', {'update': update })
         finally:
             return False
             # how to set unsuccessful?
@@ -63,6 +71,8 @@ try it again.
 @view_config(route_name="socketio")
 def socketio(request):
     socketio_manage(request.environ, {"/wavefront": WavefrontNamespace},
-                    request=request)
+                    request=request,
+#                    json_dumps=WavefrontJSONEncoder.encode,
+                   )
     return Response('')
 
