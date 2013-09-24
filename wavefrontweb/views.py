@@ -15,7 +15,8 @@ import logging
 
 log = logging.getLogger('views')
 
-from wavefrontweb import queue
+from gevent.queue import Queue
+from wavefront import publisher
 
 class WavefrontNamespace(BaseNamespace):
     def initialize(self):
@@ -28,19 +29,21 @@ class WavefrontNamespace(BaseNamespace):
     def wfdata_greenlet(self):
         try:
             log.info('starting wfdata greenlet')
-            while True:
-                update = queue.get()
-                log.info(update)
-                print update
-                binner, update = update
-                update = [dict(
-                    timestamp=b.timestamp,
-                    max=b.max,
-                    min=b.min,
-                    mean=b.mean,
-                    nsamples=b.nsamples) for b in update]
-                print update
-                self.emit('update', {'update': update })
+            queue = Queue()
+            with publisher.subscription(queue):
+                while True:
+                    update = queue.get()
+                    log.info(update)
+                    print update
+                    binner, update = update
+                    update = [dict(
+                        timestamp=b.timestamp,
+                        max=b.max,
+                        min=b.min,
+                        mean=b.mean,
+                        nsamples=b.nsamples) for b in update]
+                    print update
+                    self.emit('update', {'update': update })
         finally:
             return False
             # how to set unsuccessful?
