@@ -1,3 +1,5 @@
+import time
+
 import gevent.monkey
 gevent.monkey.patch_all()
 
@@ -9,9 +11,9 @@ from wavefront.controller import App as WfController
 
 import logging
 
-from antelope import brttpkt
+#from antelope import brttpkt
 
-from wavefront.test import make_mock_proc_orb, makepkt
+#from wavefront.test import make_mock_proc_orb, makepkt
 
 
 log = logging.getLogger('wavefront-web')
@@ -28,8 +30,8 @@ def _janitor(src):
     log.critical("Waveform controller died")
     sys.exit(1)
 
-for n in xrange(2):
-    brttpkt.get_rvals.appendleft((n, 'foobar', n*5, makepkt(n*5)))
+#for n in xrange(2):
+#    brttpkt.get_rvals.appendleft((n, 'foobar', n*5, makepkt(n*5)))
 
 queue = Queue()
 
@@ -38,8 +40,9 @@ def cb(update):
 
 wfcontroller = WfController()
 wfcontroller.link_exception(_janitor)
-orb = wfcontroller.add_orb('', cb)
-orb.add_binner('channet_chansta_chanchan_chanloc', twin=10.0, tbin=5.0)
+orb = wfcontroller.add_orb('anfexport:usarrayTA', cb, select='TA_058A.*',
+        tafter=time.time() - 600)
+orb.add_binner('TA_058A_BHN', twin=600.0, tbin=1.0)
 #make_mock_proc_orb(2, wfcontroller, orb)
 wfcontroller.start()
 

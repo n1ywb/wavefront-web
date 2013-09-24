@@ -7,10 +7,20 @@ angular.module('wavefrontweb', [])
         // $socketio.on('evnam', function(data) { ... } );
         // $socketio.emit('evname', data);
         $scope.wfdata = [];
+/*        $scope.wfdata.push({timestamp: new Date(0), max: 10, min: 0});
+        $scope.wfdata.push({timestamp: new Date(1000), max: 0, min: -10});
+        $scope.wfdata.push({timestamp: new Date(2000), max: 10, min: -10});
+        $scope.wfdata.push({timestamp: new Date(3000), max: 10, min: -10});
+        $scope.wfdata.push({timestamp: new Date(4000), max: 10, min: -10});
+        $scope.wfdata.push({timestamp: new Date(5000), max: 10, min: -10});
+        */
         $socketio.on('update', function(data) {
-            console.log("Update: " + data.update.toSource());
-            for (bin in data.update) {
-                $scope.wfdata.push(data.update[bin]);
+            for (binidx in data.update) {
+                bin = data.update[binidx]
+                console.log("Update: " + JSON.stringify(bin));
+                timestamp = new Date(bin.timestamp * 1000);
+                bin.timestamp = timestamp
+                $scope.wfdata.push(bin);
             }
         });
     })
@@ -50,9 +60,10 @@ angular.module('wavefrontweb', [])
                     width = 960 - margin.left - margin.right,
                     height = 500 - margin.top - margin.bottom;
 
-                var parseDate = d3.time.format("%Y%m%d").parse;
+                // var parseDate = d3.time.format("%Y%m%d").parse;
 
                 var x = d3.time.scale()
+                    //.range([0, width]);
                     .range([0, width]);
 
                 var y = d3.scale.linear()
@@ -66,24 +77,18 @@ angular.module('wavefrontweb', [])
                     .scale(y)
                     .orient("left");
 
-                var area = d3.svg.area()
-                    .x(function(d) { return x(d.timestamp); })
-                    .y0(function(d) { return y(d.min); })
-                    .y1(function(d) { return y(d.max); });
-
-                var svg = d3.select("body").append("svg")
-                    .attr("width", width + margin.left + margin.right)
-                    .attr("height", height + margin.top + margin.bottom)
-                  .append("g")
-                    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
                 $scope.$watch('data.length', function(oldLen, newLen) {
                     var data = $scope.data;
                     if (!data.length) { return; }
 
                     // remove g
-                    svg.select('g').remove();
-                    svg.select('path').remove();
+                    d3.select('svg').remove();
+
+                    var svg = d3.select("body").append("svg")
+                        .attr("width", width + margin.left + margin.right)
+                        .attr("height", height + margin.top + margin.bottom)
+                      .append("g")
+                        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
                     // fix this; do we need to iterate data even?
                     // does this modify in place?
@@ -97,10 +102,24 @@ angular.module('wavefrontweb', [])
                     y.domain([d3.min(data, function(d) { return d.min; }), 
                               d3.max(data, function(d) { return d.max; })]);
 
-                    svg.append("path")
-                        .datum(data)
-                        .attr("class", "area")
-                        .attr("d", area);
+                    var height_f =  function(d) { 
+                        var ydmax = y(d.max);
+                        var ydmin = y(d.min);
+                        var diff = ydmin - ydmax;
+                        return diff;
+                    };
+
+                    svg.selectAll(".bar")
+                            .data(data)
+                        .enter().append("rect")
+                            .attr("class", "bar")
+                            .attr('width', function(d) { 
+                                    r = width / data.length; 
+                                    return r; })
+                            .attr('height', height_f)
+                            .attr('x', function(d) { return x(d.timestamp); })
+                            .attr('y', function(d) { return y(d.max); })
+                        ;
 
                     svg.append("g")
                         .attr("class", "x axis")
@@ -115,7 +134,7 @@ angular.module('wavefrontweb', [])
                             .attr("y", 6)
                             .attr("dy", ".71em")
                             .style("text-anchor", "end")
-                            .text("Temperature (ºF)");
+                            .text("Amplitude");
                 });
             }
         }

@@ -2,6 +2,8 @@
 
 body {
   font: 10px sans-serif;
+  background-color:blue;
+  color: white;
 }
 
 .axis path,
@@ -11,6 +13,11 @@ body {
   shape-rendering: crispEdges;
 }
 
+.axis text {
+	color: white;
+	fill: white;
+}
+
 .x.axis path {
   display: none;
 }
@@ -18,4 +25,15 @@ body {
 .area {
   fill: steelblue;
 }
+
+.bar {
+  fill: yellow;
+/* opacity:0.4; */
+}
+
+.axis text {
+  font: 10px sans-serif;
+  color: white;
+}
+
 

@@ -27,8 +27,11 @@ class WavefrontNamespace(BaseNamespace):
 
     def wfdata_greenlet(self):
         try:
+            log.info('starting wfdata greenlet')
             while True:
                 update = queue.get()
+                log.info(update)
+                print update
                 binner, update = update
                 update = [dict(
                     timestamp=b.timestamp,
