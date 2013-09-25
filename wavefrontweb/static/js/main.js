@@ -1,30 +1,6 @@
 //https://github.com/abourget/moo
 // http://bl.ocks.org/mbostock/3884914
 
-var get_socketio = function(namespace, scope) {
-    var socket = io.connect(namespace);
-    return {
-        on: function (eventName, callback) {
-            socket.on(eventName, function () {
-                var args = arguments;
-                scope.$apply(function () {
-                    callback.apply(socket, args);
-                });
-            });
-        },
-        emit: function (eventName, data, callback) {
-            socket.emit(eventName, data, function () {
-                var args = arguments; 
-                scope.$apply(function() {
-                    if (callback) {
-                        callback.apply(socket, args);
-                    }
-                });
-            })
-        }
-    };
-};
-
 angular.module('wavefrontweb', [])
     .controller('WavefrontWebController', function($scope, $socketio) {
         console.log('WavefrontWebController Initialized');
@@ -52,10 +28,30 @@ angular.module('wavefrontweb', [])
  */   })
 
     .factory("$socketio", function($rootScope) {
-        return get_socketio('/wavefront', $rootScope);
+        var socket = io.connect('/wavefront');
+        return {
+            on: function (eventName, callback) {
+                socket.on(eventName, function () {
+                    var args = arguments;
+                    $rootScope.$apply(function () {
+                        callback.apply(socket, args);
+                    });
+                });
+            },
+            emit: function (eventName, data, callback) {
+                socket.emit(eventName, data, function () {
+                    var args = arguments;
+                    $rootScope.$apply(function () {
+                        if (callback) {
+                            callback.apply(socket, args);
+                        }
+                    });
+                })
+            }
+        };
     })
 
-    .directive('wfChart', function($compile, $interpolate) {
+    .directive('wfChart', function($compile, $interpolate, $socketio) {
         return {
             restrict: "EA",
             scope: {
@@ -63,7 +59,6 @@ angular.module('wavefrontweb', [])
             link: function($scope, $element, $attr) {
                 /* console.log(JSON.stringify($attr)); */
                 console.log(["Linking wfChart", $attr.srcname, $attr.twin, $attr.tbin].join(', '))
-                var $socketio = get_socketio('/wavefront', $scope);
                 var twin = parseFloat($attr.twin);
                 var tbin = parseFloat($attr.tbin);
                 $scope.data = [];
