@@ -1,3 +1,5 @@
+import gevent
+
 from pyramid.response import Response
 from pyramid.view import view_config
 
@@ -25,6 +27,12 @@ class WavefrontNamespace(BaseNamespace):
         # self.emit
         # self.spawn
         # self.session['key']
+        self.workers = []
+
+    def recv_disconnect(self):
+        log.info("Received Disconnect")
+        gevent.killall(self.workers)
+        super(WavefrontNamespace, self).recv_disconnect()
 
     def on_subscribe(self, args):
         srcname, twin, tbin = args
@@ -55,7 +63,7 @@ class WavefrontNamespace(BaseNamespace):
                 log.error("wfdata greenlet died", exc_info=True)
                 raise
                 # how to set unsuccessful?
-        self.spawn(wfdata_greenlet)
+        self.workers.append(self.spawn(wfdata_greenlet))
 
 
 @view_config(route_name='home', renderer='templates/index.html')
