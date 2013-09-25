@@ -35,12 +35,14 @@ class WavefrontNamespace(BaseNamespace):
                 queue = Queue()
                 binner = orb.binners.get_binner(srcname, twin, tbin)
                 if binner is None:
-                    log.error("No such binner")
+                    msg = "No such binner %s" % ((srcname, twin, tbin),)
+                    log.error(msg)
+                    self.emit('_'.join(('error', srcname)), 'NoSuchBinner', msg)
                     raise
                 with binner.subscription(queue):
                     # make it dump the buffer into our queue somehow
                     log.info('dumping history')
-                    self.emit('update', {'update': [bin.asdict() for bin in binner.store.itervalues()
+                    self.emit('_'.join(('update', srcname)), {'update': [bin.asdict() for bin in binner.store.itervalues()
                                                         if bin is not None]})
                     log.info('entering main loop')
                     while True:
@@ -48,7 +50,7 @@ class WavefrontNamespace(BaseNamespace):
                         log.info('got update from queue')
                         log.info(update)
                         update = [b.asdict() for b in update]
-                        self.emit('update', {'update': update })
+                        self.emit('_'.join(('update', srcname)), {'update': update })
             except Exception, e:
                 log.error("wfdata greenlet died", exc_info=True)
                 raise

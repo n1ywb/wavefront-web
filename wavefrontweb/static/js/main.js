@@ -1,12 +1,36 @@
 //https://github.com/abourget/moo
 // http://bl.ocks.org/mbostock/3884914
 
+var get_socketio = function(namespace, scope) {
+    var socket = io.connect(namespace);
+    return {
+        on: function (eventName, callback) {
+            socket.on(eventName, function () {
+                var args = arguments;
+                scope.$apply(function () {
+                    callback.apply(socket, args);
+                });
+            });
+        },
+        emit: function (eventName, data, callback) {
+            socket.emit(eventName, data, function () {
+                var args = arguments; 
+                scope.$apply(function() {
+                    if (callback) {
+                        callback.apply(socket, args);
+                    }
+                });
+            })
+        }
+    };
+};
+
 angular.module('wavefrontweb', [])
     .controller('WavefrontWebController', function($scope, $socketio) {
         console.log('WavefrontWebController Initialized');
         // $socketio.on('evnam', function(data) { ... } );
         // $socketio.emit('evname', data);
-        $scope.wfdata = [];
+/*        $scope.wfdata = []; */
         /*
         $scope.wfdata.push({timestamp: new Date(0), max: 10, min: 0});
         $scope.wfdata.push({timestamp: new Date(1000), max: 0, min: -10});
@@ -15,7 +39,7 @@ angular.module('wavefrontweb', [])
         $scope.wfdata.push({timestamp: new Date(4000), max: 10, min: -10});
         $scope.wfdata.push({timestamp: new Date(5000), max: 10, min: -10});
         */
-        $socketio.on('update', function(data) {
+/*        $socketio.on('update', function(data) {
             for (binidx in data.update) {
                 bin = data.update[binidx]
                 console.log("Update: " + JSON.stringify(bin));
@@ -24,40 +48,48 @@ angular.module('wavefrontweb', [])
                 $scope.wfdata.push(bin);
             }
         });
-        $socketio.emit('subscribe', ['TA_058A_BHN', 600.0, 1.0]);
-    })
+        $socketio.emit('subscribe', ['TA_058A_BHN', 3600.0, 10.0]);
+ */   })
 
     .factory("$socketio", function($rootScope) {
-        var socket = io.connect('/wavefront');
-        return {
-            on: function (eventName, callback) {
-                socket.on(eventName, function () {
-                    var args = arguments;
-                    $rootScope.$apply(function () {
-                        callback.apply(socket, args);
-                    });
-                });
-            },
-            emit: function (eventName, data, callback) {
-                socket.emit(eventName, data, function () {
-                    var args = arguments; 
-                    $rootScope.$apply(function() {
-                        if (callback) {
-                            callback.apply(socket, args);
-                        }
-                    });
-                })
-            }
-        };
+        return get_socketio('/wavefront', $rootScope);
     })
 
     .directive('wfChart', function($compile, $interpolate) {
         return {
             restrict: "EA",
             scope: {
-                data: "=",
             },
             link: function($scope, $element, $attr) {
+                console.log(JSON.stringify($attr));
+                console.log(["Linking wfChart", $attr.srcname, $attr.twin, $attr.tbin].join(', '))
+                var $socketio = get_socketio('/wavefront', $scope);
+                var twin = parseFloat($attr.twin);
+                var tbin = parseFloat($attr.tbin);
+                $scope.data = [];
+
+                $socketio.on('error_' + $attr.srcname, function(ename, emsg) {
+                    console.log(ename + ": " + emsg);
+                });
+
+                $socketio.on('update_' + $attr.srcname, function(data) {
+                    for (binidx in data.update) {
+                        bin = data.update[binidx]
+                        console.log("Update: " + JSON.stringify([$attr.srcname, twin, tbin, bin]));
+                        timestamp = new Date(bin.timestamp * 1000);
+                        bin = {
+                            timestamp: bin.timestamp,
+                            max: bin.max,
+                            min: bin.min,
+                            mean: bin.mean,
+                            nsamples: bin.nsamples
+                        };
+                        $scope.data.push(bin);
+                    }
+                });
+
+                $socketio.emit('subscribe', [$attr.srcname, twin, tbin]);
+
                 var margin = {top: 20, right: 20, bottom: 30, left: 50},
                     width = 960 - margin.left - margin.right,
                     height = 300 - margin.top - margin.bottom;
@@ -84,7 +116,11 @@ angular.module('wavefrontweb', [])
                     if (!data.length) { return; }
 
                     // remove g
-                    d3.select('svg').remove();
+                    // d3.select('svg').remove();
+                    console.log("Removing SVG")
+                    d3.select($element[0]).select('svg').remove();
+
+
 
                     var area = d3.svg.area()
                         .x(function(d) { return x(d.timestamp); })
@@ -95,7 +131,8 @@ angular.module('wavefrontweb', [])
                         .x(function(d) { return x(d.timestamp); })
                         .y(function(d) { return y(d.mean); });
 
-                    var svg = d3.select("body").append("svg")
+                    console.log("Appending SVG")
+                    var svg = d3.select($element[0]).append("svg")
                         .attr("width", width + margin.left + margin.right)
                         .attr("height", height + margin.top + margin.bottom)
                       .append("g")
@@ -120,6 +157,7 @@ angular.module('wavefrontweb', [])
                         return diff;
                     };
 
+/*
                     svg.selectAll(".bar")
                             .data(data)
                         .enter().append("rect")
@@ -133,11 +171,14 @@ angular.module('wavefrontweb', [])
                             .attr('x', function(d) { return x(d.timestamp); })
                             .attr('y', function(d) { return y(d.max); })
                         ;
+*/
 
 // These require data to be sorted by timestamp, but that's not how it arrives,
 // and we don't want to do that right now.
 // area could even simulate bars by adding more points
-/*
+// could use horizontal lines or some other symbol for mean instead of a
+// continuous line
+/**/
                     svg.append("path")
                         .datum(data)
                         .attr("class", "area")
@@ -147,7 +188,7 @@ angular.module('wavefrontweb', [])
                         .datum(data)
                         .attr("class", "line")
                         .attr("d", line);
-*/
+/**/
 
                     svg.append("g")
                         .attr("class", "x axis")

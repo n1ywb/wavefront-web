@@ -34,12 +34,14 @@ def _janitor(src):
 #for n in xrange(2):
 #    brttpkt.get_rvals.appendleft((n, 'foobar', n*5, makepkt(n*5)))
 
-twin = 600.0
+twin = 3600.0
 
 wfcontroller = WfController()
 wfcontroller.link_exception(_janitor)
 orb = wfcontroller.add_orb('anfexport:usarrayTA', select='TA_058A.*', tafter=time.time() - twin)
-orb.add_binner('TA_058A_BHN', twin=twin, tbin=1.0)
+orb.add_binner('TA_058A_BHN', twin=twin, tbin=10.0)
+orb.add_binner('TA_058A_BHE', twin=twin, tbin=10.0)
+orb.add_binner('TA_058A_BHZ', twin=twin, tbin=10.0)
 #make_mock_proc_orb(2, wfcontroller, orb)
 wfcontroller.start()
 
