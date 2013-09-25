@@ -17,7 +17,7 @@ log = logging.getLogger('views')
 log.setLevel(logging.DEBUG)
 
 from gevent.queue import Queue
-from wavefrontweb import publisher, orb
+from wavefrontweb import orb
 
 class WavefrontNamespace(BaseNamespace):
     def initialize(self):
@@ -25,34 +25,35 @@ class WavefrontNamespace(BaseNamespace):
         # self.emit
         # self.spawn
         # self.session['key']
-        self.spawn(self.wfdata_greenlet)
 
-    def wfdata_greenlet(self):
-        try:
-            log.info('starting wfdata greenlet')
-            queue = Queue()
-            with publisher.subscription(queue):
-                # make it dump the buffer into our queue somehow
-                log.info('dumping history')
-                store = iter(orb.binners.binners['TA_058A_BHN']).next().store
-                self.emit('update', {'update': [bin.asdict() for bin in store.itervalues()]})
-                log.info('entering main loop')
-                while True:
-                    update = queue.get()
-                    log.info(update)
-                    print update
-                    binner, update = update
-                    update = [dict(
-                        timestamp=b.timestamp,
-                        max=b.max,
-                        min=b.min,
-                        mean=b.mean,
-                        nsamples=b.nsamples) for b in update]
-                    print update
-                    self.emit('update', {'update': update })
-        finally:
-            return False
-            # how to set unsuccessful?
+    def on_subscribe(self, args):
+        srcname, twin, tbin = args
+        def wfdata_greenlet():
+            try:
+                log.info('starting wfdata greenlet %s %s %s' % (srcname, twin,
+                                                                    tbin))
+                queue = Queue()
+                binner = orb.binners.get_binner(srcname, twin, tbin)
+                if binner is None:
+                    log.error("No such binner")
+                    raise
+                with binner.subscription(queue):
+                    # make it dump the buffer into our queue somehow
+                    log.info('dumping history')
+                    self.emit('update', {'update': [bin.asdict() for bin in binner.store.itervalues()
+                                                        if bin is not None]})
+                    log.info('entering main loop')
+                    while True:
+                        update = queue.get()
+                        log.info('got update from queue')
+                        log.info(update)
+                        update = [b.asdict() for b in update]
+                        self.emit('update', {'update': update })
+            except Exception, e:
+                log.error("wfdata greenlet died", exc_info=True)
+                raise
+                # how to set unsuccessful?
+        self.spawn(wfdata_greenlet)
 
 
 @view_config(route_name='home', renderer='templates/index.html')

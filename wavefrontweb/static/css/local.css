@@ -23,11 +23,21 @@ body {
 }
 
 .area {
-  fill: steelblue;
+  fill: yellow;
+}
+
+.line {
+  fill: none;
+  stroke: black;
+  stroke-width: 0.5px;
 }
 
 .bar {
   fill: yellow;
+  stroke: none;
+/*  stroke: yellow;
+  stroke-width:0.2 */
+  shape-rendering: crispEdges;  
 /* opacity:0.4; */
 }
 

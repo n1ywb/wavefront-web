@@ -7,7 +7,8 @@ angular.module('wavefrontweb', [])
         // $socketio.on('evnam', function(data) { ... } );
         // $socketio.emit('evname', data);
         $scope.wfdata = [];
-/*        $scope.wfdata.push({timestamp: new Date(0), max: 10, min: 0});
+        /*
+        $scope.wfdata.push({timestamp: new Date(0), max: 10, min: 0});
         $scope.wfdata.push({timestamp: new Date(1000), max: 0, min: -10});
         $scope.wfdata.push({timestamp: new Date(2000), max: 10, min: -10});
         $scope.wfdata.push({timestamp: new Date(3000), max: 10, min: -10});
@@ -23,6 +24,7 @@ angular.module('wavefrontweb', [])
                 $scope.wfdata.push(bin);
             }
         });
+        $socketio.emit('subscribe', ['TA_058A_BHN', 600.0, 1.0]);
     })
 
     .factory("$socketio", function($rootScope) {
@@ -58,7 +60,7 @@ angular.module('wavefrontweb', [])
             link: function($scope, $element, $attr) {
                 var margin = {top: 20, right: 20, bottom: 30, left: 50},
                     width = 960 - margin.left - margin.right,
-                    height = 500 - margin.top - margin.bottom;
+                    height = 300 - margin.top - margin.bottom;
 
                 // var parseDate = d3.time.format("%Y%m%d").parse;
 
@@ -83,6 +85,15 @@ angular.module('wavefrontweb', [])
 
                     // remove g
                     d3.select('svg').remove();
+
+                    var area = d3.svg.area()
+                        .x(function(d) { return x(d.timestamp); })
+                        .y0(function(d) { return y(d.min); })
+                        .y1(function(d) { return y(d.max); });
+                        
+                    var line = d3.svg.line()
+                        .x(function(d) { return x(d.timestamp); })
+                        .y(function(d) { return y(d.mean); });
 
                     var svg = d3.select("body").append("svg")
                         .attr("width", width + margin.left + margin.right)
@@ -114,12 +125,29 @@ angular.module('wavefrontweb', [])
                         .enter().append("rect")
                             .attr("class", "bar")
                             .attr('width', function(d) { 
-                                    r = width / data.length; 
+                                    var r = (x(1000001000.0) - x(1000000000.0));
+                                    return r;
+                                    var r = width / data.length; 
                                     return r; })
                             .attr('height', height_f)
                             .attr('x', function(d) { return x(d.timestamp); })
                             .attr('y', function(d) { return y(d.max); })
                         ;
+
+// These require data to be sorted by timestamp, but that's not how it arrives,
+// and we don't want to do that right now.
+// area could even simulate bars by adding more points
+/*
+                    svg.append("path")
+                        .datum(data)
+                        .attr("class", "area")
+                        .attr("d", area);
+
+                    svg.append("path")
+                        .datum(data)
+                        .attr("class", "line")
+                        .attr("d", line);
+*/
 
                     svg.append("g")
                         .attr("class", "x axis")

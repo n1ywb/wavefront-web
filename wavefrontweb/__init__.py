@@ -1,3 +1,4 @@
+from collections import defaultdict
 import time
 
 import gevent.monkey
@@ -10,8 +11,6 @@ from sqlalchemy import engine_from_config
 from wavefront.controller import App as WfController
 
 import logging
-
-from contextlib import contextmanager
 
 #from antelope import brttpkt
 
@@ -35,52 +34,11 @@ def _janitor(src):
 #for n in xrange(2):
 #    brttpkt.get_rvals.appendleft((n, 'foobar', n*5, makepkt(n*5)))
 
-class Publisher(object):
-    def __init__(self, block_on_full=False):
-        self._queues = set()
-        self.block_on_full = block_on_full
-
-    def publish(self, obj):
-        for queue in self._queues:
-            try:
-                queue.put(obj, block=self.block_on_full)
-            except Full:
-                log.warning("queue overflow")
-
-    @contextmanager
-    def subscription(self, queue):
-        """Subscribe queue
-
-        :param queue: The queue to which you would like packets to be published
-        :type queue: Instance of ``Queue`` or compatible
-
-        Example::
-
-            queue = Queue()
-            with publisher.subscription(queue):
-                while True:
-                    pickledpacket = queue.get()
-                    ...
-        """
-        self._queues.add(queue)
-        try:
-            yield
-        finally:
-            # Stop publishing
-            self._queues.remove(queue)
-
-
-publisher = Publisher()
-
-def cb(update):
-    publisher.publish(update)
-
-twin = 600
+twin = 600.0
 
 wfcontroller = WfController()
 wfcontroller.link_exception(_janitor)
-orb = wfcontroller.add_orb('anfexport:usarrayTA', cb, select='TA_058A.*',
-        tafter=time.time() - twin)
+orb = wfcontroller.add_orb('anfexport:usarrayTA', select='TA_058A.*', tafter=time.time() - twin)
 orb.add_binner('TA_058A_BHN', twin=twin, tbin=1.0)
 #make_mock_proc_orb(2, wfcontroller, orb)
 wfcontroller.start()
