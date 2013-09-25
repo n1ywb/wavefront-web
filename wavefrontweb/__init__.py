@@ -34,7 +34,7 @@ def _janitor(src):
 #for n in xrange(2):
 #    brttpkt.get_rvals.appendleft((n, 'foobar', n*5, makepkt(n*5)))
 
-twin = 3600.0
+twin = 600.0
 
 wfcontroller = WfController()
 wfcontroller.link_exception(_janitor)
