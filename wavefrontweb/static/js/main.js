@@ -61,7 +61,7 @@ angular.module('wavefrontweb', [])
             scope: {
             },
             link: function($scope, $element, $attr) {
-                console.log(JSON.stringify($attr));
+                /* console.log(JSON.stringify($attr)); */
                 console.log(["Linking wfChart", $attr.srcname, $attr.twin, $attr.tbin].join(', '))
                 var $socketio = get_socketio('/wavefront', $scope);
                 var twin = parseFloat($attr.twin);
