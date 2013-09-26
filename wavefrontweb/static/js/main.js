@@ -58,19 +58,24 @@ angular.module('wavefrontweb', [])
             },
             link: function($scope, $element, $attr) {
                 /* console.log(JSON.stringify($attr)); */
-                console.log(["Linking wfChart", $attr.srcname, $attr.twin, $attr.tbin].join(', '))
                 var twin = parseFloat($attr.twin);
                 var tbin = parseFloat($attr.tbin);
                 $scope.data = [];
 
-                $socketio.on('error_' + $attr.srcname, function(ename, emsg) {
+                var _hash = function() {
+                    return [$attr.srcname, String(twin), String(tbin)].join('_');
+                };
+
+                console.log(["Linking wfChart", _hash()].join(', '))
+
+                $socketio.on('error_' + _hash(), function(ename, emsg) {
                     console.log(ename + ": " + emsg);
                 });
 
-                $socketio.on('update_' + $attr.srcname, function(data) {
+                $socketio.on('update_' + _hash(), function(data) {
                     for (binidx in data.update) {
                         bin = data.update[binidx]
-                        console.log("Update: " + JSON.stringify([$attr.srcname, twin, tbin, bin]));
+                        console.log("Update: " + JSON.stringify([_hash(), bin]));
                         timestamp = new Date(bin.timestamp * 1000);
                         bin = {
                             timestamp: bin.timestamp,
@@ -83,11 +88,11 @@ angular.module('wavefrontweb', [])
                     }
                 });
 
-                $socketio.emit('subscribe', [$attr.srcname, twin, tbin]);
+                $socketio.emit('subscribe', [$attr.srcname, twin, tbin, _hash()]);
 
                 var margin = {top: 20, right: 20, bottom: 30, left: 50},
-                    width = 960 - margin.left - margin.right,
-                    height = 300 - margin.top - margin.bottom;
+                    width = parseInt($attr.width) - margin.left - margin.right,
+                    height = parseInt($attr.height) - margin.top - margin.bottom;
 
                 // var parseDate = d3.time.format("%Y%m%d").parse;
 
@@ -110,12 +115,7 @@ angular.module('wavefrontweb', [])
                     var data = $scope.data;
                     if (!data.length) { return; }
 
-                    // remove g
-                    // d3.select('svg').remove();
-                    console.log("Removing SVG")
                     d3.select($element[0]).select('svg').remove();
-
-
 
                     var area = d3.svg.area()
                         .x(function(d) { return x(d.timestamp); })
@@ -126,7 +126,6 @@ angular.module('wavefrontweb', [])
                         .x(function(d) { return x(d.timestamp); })
                         .y(function(d) { return y(d.mean); });
 
-                    console.log("Appending SVG")
                     var svg = d3.select($element[0]).append("svg")
                         .attr("width", width + margin.left + margin.right)
                         .attr("height", height + margin.top + margin.bottom)

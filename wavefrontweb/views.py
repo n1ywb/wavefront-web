@@ -35,7 +35,7 @@ class WavefrontNamespace(BaseNamespace):
         super(WavefrontNamespace, self).recv_disconnect()
 
     def on_subscribe(self, args):
-        srcname, twin, tbin = args
+        srcname, twin, tbin, key = args
         def wfdata_greenlet():
             try:
                 log.info('starting wfdata greenlet %s %s %s' % (srcname, twin,
@@ -45,20 +45,20 @@ class WavefrontNamespace(BaseNamespace):
                 if binner is None:
                     msg = "No such binner %s" % ((srcname, twin, tbin),)
                     log.error(msg)
-                    self.emit('_'.join(('error', srcname)), 'NoSuchBinner', msg)
+                    self.emit('_'.join(('error', key)), 'NoSuchBinner', msg)
                     raise
                 with binner.subscription(queue):
                     # make it dump the buffer into our queue somehow
                     log.info('dumping history')
-                    self.emit('_'.join(('update', srcname)), {'update': [bin.asdict() for bin in binner.store.itervalues()
+                    self.emit('_'.join(('update', key)), {'update': [bin.asdict() for bin in binner.store.itervalues()
                                                         if bin is not None]})
                     log.info('entering main loop')
                     while True:
                         update = queue.get()
-                        log.info('got update from queue')
-                        log.info(update)
+                        log.debug('got update from queue')
+                        log.debug(update)
                         update = [b.asdict() for b in update]
-                        self.emit('_'.join(('update', srcname)), {'update': update })
+                        self.emit('_'.join(('update', key)), {'update': update })
             except Exception, e:
                 log.error("wfdata greenlet died", exc_info=True)
                 raise
