@@ -66,7 +66,7 @@ for src in srcs:
     selectsrcs.append('%s_%s.*' % (parts[0], parts[1]))
 select = '|'.join(selectsrcs)
 
-orb = wfcontroller.add_orb('anfexport:usarrayTA', select='.*',
+orb = wfcontroller.add_orb('anfexport:usarrayTA', select=select,
                                 tafter=time.time() - 600)
 
 for src in srcs:
