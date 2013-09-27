@@ -1,4 +1,5 @@
 import gevent
+from gevent.queue import Empty
 
 from pyramid.response import Response
 from pyramid.view import view_config
@@ -58,10 +59,20 @@ class WavefrontNamespace(BaseNamespace):
                                                         if bin is not None]})
                     log.info('entering main loop')
                     while True:
-                        update = queue.get()
-                        log.debug('Update: %s' % pformat(update))
-                        update = [b.asdict() for b in update]
-                        self.emit('_'.join(('update', key)), {'update': update })
+                        updates = []
+                        try:
+                            updates.extend(queue.get())
+                            for n in xrange(64):
+                                #gevent.sleep(1)
+                                updates.extend(queue.get(timeout=10))
+                        except Empty:
+                            pass
+                        if len(updates) > 0:
+                            log.debug('Update %s len %s' % (key, len(updates)))
+                            #log.debug('Update: %s' % pformat(updates))
+                            updates = [b.asdict() for b in updates]
+                            self.emit('_'.join(('update', key)), {'update': updates })
+
             except Exception, e:
                 log.error("wfdata greenlet died", exc_info=True)
                 raise
