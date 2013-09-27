@@ -25,7 +25,18 @@ angular.module('wavefrontweb', [])
             }
         });
         $socketio.emit('subscribe', ['TA_058A_BHN', 3600.0, 10.0]);
- */   })
+ */   
+    $scope.redraw = 0;
+
+    var redraw = function() {
+        $scope.$apply(function() {
+            $scope.redraw += 1;
+            $scope.redraw %= 2;
+        });
+    };
+
+    interval = setInterval(redraw, 10000);    
+    })
 
     .factory("$socketio", function($rootScope) {
         var socket = io.connect('/wavefront');
@@ -54,8 +65,7 @@ angular.module('wavefrontweb', [])
     .directive('wfChart', function($compile, $interpolate, $socketio) {
         return {
             restrict: "EA",
-            scope: {
-            },
+            scope: true,
             link: function($scope, $element, $attr) {
                 /* console.log(JSON.stringify($attr)); */
                 var twin = parseFloat($attr.twin);
@@ -111,7 +121,7 @@ angular.module('wavefrontweb', [])
                     .scale(y)
                     .orient("left");
 
-                $scope.$watch('data.length', function(oldLen, newLen) {
+                $scope.$watch('redraw', function(oldLen, newLen) {
                     var data = $scope.data;
                     if (!data.length) { return; }
 
