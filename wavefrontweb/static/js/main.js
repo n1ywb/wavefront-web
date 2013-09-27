@@ -27,11 +27,15 @@ angular.module('wavefrontweb', [])
         $socketio.emit('subscribe', ['TA_058A_BHN', 3600.0, 10.0]);
  */   
     $scope.redraw = 0;
+    $scope.request_redraw = [0];
 
     var redraw = function() {
         $scope.$apply(function() {
-            $scope.redraw += 1;
-            $scope.redraw %= 2;
+            if ($scope.request_redraw[0] > 0) {
+                $scope.redraw += 1;
+                $scope.redraw %= 2;
+                $scope.request_redraw[0] = 0;
+            }
         });
     };
 
@@ -83,9 +87,10 @@ angular.module('wavefrontweb', [])
                 });
 
                 $socketio.on('update_' + _hash(), function(data) {
+                    console.log("Update " + _hash() + " len " + String(data.update.length))
                     for (binidx in data.update) {
                         bin = data.update[binidx]
-                        console.log("Update: " + JSON.stringify([_hash(), bin]));
+                        /* console.log("Update: " + JSON.stringify([_hash(), bin])); */
                         timestamp = new Date(bin.timestamp * 1000);
                         bin = {
                             timestamp: bin.timestamp,
@@ -95,6 +100,7 @@ angular.module('wavefrontweb', [])
                             nsamples: bin.nsamples
                         };
                         $scope.data.push(bin);
+                        $scope.request_redraw[0] = 1;
                     }
                 });
 
