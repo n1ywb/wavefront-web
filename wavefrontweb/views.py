@@ -8,6 +8,8 @@ from sqlalchemy.exc import DBAPIError
 from socketio.namespace import BaseNamespace
 from socketio import socketio_manage
 
+from pprint import pformat
+
 from .models import (
     DBSession,
     MyModel,
@@ -38,6 +40,8 @@ class WavefrontNamespace(BaseNamespace):
         srcname, twin, tbin, key = args
         def wfdata_greenlet():
             try:
+                log = logging.getLogger(key)
+                log.setLevel(logging.DEBUG)
                 log.info('starting wfdata greenlet %s %s %s' % (srcname, twin,
                                                                     tbin))
                 queue = Queue()
@@ -55,8 +59,7 @@ class WavefrontNamespace(BaseNamespace):
                     log.info('entering main loop')
                     while True:
                         update = queue.get()
-                        log.debug('got update from queue')
-                        log.debug(update)
+                        log.debug('Update: %s' % pformat(update))
                         update = [b.asdict() for b in update]
                         self.emit('_'.join(('update', key)), {'update': update })
             except Exception, e:
