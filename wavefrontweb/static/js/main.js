@@ -119,7 +119,7 @@ angular.module('wavefrontweb', [])
                         /* console.log("Update: " + JSON.stringify([_hash(), bin])); */
                         timestamp = new Date(bin.timestamp * 1000);
                         bin = {
-                            timestamp: bin.timestamp,
+                            timestamp: timestamp,
                             max: bin.max,
                             min: bin.min,
                             mean: bin.mean,
