@@ -67,7 +67,7 @@ for src in srcs:
 select = '|'.join(selectsrcs)
 
 orb = wfcontroller.add_orb('anfexport:usarrayTA', select=select,
-                                tafter=time.time() - 7200)
+                                tafter=time.time() - 86400)
 
 for src in srcs:
     orb.add_binner(src, twin=86400.0, tbin=240.0)
