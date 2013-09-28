@@ -4,6 +4,12 @@
 angular.module('wavefrontweb', [])
     .controller('WavefrontWebController', function($scope, $socketio) {
         console.log('WavefrontWebController Initialized');
+        $scope.redraw_sleep = 10000;
+        $scope.init = function(cfg) {
+            if(typeof cfg.redraw_sleep != 'undefined') {
+                $scope.redraw_sleep = cfg.redraw_sleep;
+            }
+        };
         // $socketio.on('evnam', function(data) { ... } );
         // $socketio.emit('evname', data);
 /*        $scope.wfdata = []; */
@@ -39,7 +45,7 @@ angular.module('wavefrontweb', [])
         });
     };
 
-    interval = setInterval(redraw, 10000);    
+    interval = setInterval(redraw, $scope.redraw_sleep);
     })
 
     .factory("$socketio", function($rootScope) {
