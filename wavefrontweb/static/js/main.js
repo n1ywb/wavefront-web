@@ -77,6 +77,26 @@ angular.module('wavefrontweb', [])
             restrict: "EA",
             scope: true,
             link: function($scope, $element, $attr) {
+                // https://github.com/mbostock/d3/blob/master/src/time/scale.js
+                var time_scaleLocalFormats = [
+                    [d3.time.format.utc("%Y"), true],
+                    [d3.time.format.utc("%B"), function(d) { return d.getMonth(); }],
+                    [d3.time.format.utc("%b %d"), function(d) { return d.getDate() != 1; }],
+                    [d3.time.format.utc("%a %d"), function(d) { return d.getDay() && d.getDate() != 1; }],
+                    [d3.time.format.utc("%H:%M"), function(d) { return d.getHours(); }],
+                    [d3.time.format.utc("%H:%M"), function(d) { return d.getMinutes(); }],
+                    [d3.time.format.utc(":%S"), function(d) { return d.getSeconds(); }],
+                    [d3.time.format.utc(".%L"), function(d) { return d.getMilliseconds(); }]
+                ];
+
+                function d3_time_scaleFormat(formats) {
+                  return function(date) {
+                    var i = formats.length - 1, f = formats[i];
+                    while (!f[1](date)) f = formats[--i];
+                    return f[0](date);
+                  };
+                }
+
                 /* console.log(JSON.stringify($attr)); */
                 var twin = parseFloat($attr.twin);
                 var tbin = parseFloat($attr.tbin);
@@ -118,7 +138,7 @@ angular.module('wavefrontweb', [])
 
                 // var parseDate = d3.time.format("%Y%m%d").parse;
 
-                var x = d3.time.scale()
+                var x = d3.time.scale.utc()
                     //.range([0, width]);
                     .range([0, width]);
 
@@ -127,7 +147,8 @@ angular.module('wavefrontweb', [])
 
                 var xAxis = d3.svg.axis()
                     .scale(x)
-                    .orient("bottom");
+                    .orient("bottom")
+                    .tickFormat(d3_time_scaleFormat(time_scaleLocalFormats));
 
                 var yAxis = d3.svg.axis()
                     .scale(y)
