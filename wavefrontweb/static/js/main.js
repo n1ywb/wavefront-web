@@ -1,4 +1,4 @@
-//https://github.com/abourget/moo
+// https://github.com/abourget/moo
 // http://bl.ocks.org/mbostock/3884914
 
 angular.module('wavefrontweb', [])
@@ -32,20 +32,21 @@ angular.module('wavefrontweb', [])
         });
         $socketio.emit('subscribe', ['TA_058A_BHN', 3600.0, 10.0]);
  */   
-    $scope.redraw = 0;
-    $scope.request_redraw = [0];
 
-    var redraw = function() {
-        $scope.$apply(function() {
-            if ($scope.request_redraw[0] > 0) {
-                $scope.redraw += 1;
-                $scope.redraw %= 2;
-                $scope.request_redraw[0] = 0;
-            }
-        });
-    };
+        $scope.redraw = 0;
+        $scope.request_redraw = [0];
 
-    interval = setInterval(redraw, $scope.redraw_sleep);
+        var redraw = function() {
+            $scope.$apply(function() {
+                if ($scope.request_redraw[0] > 0) {
+                    $scope.redraw += 1;
+                    $scope.redraw %= 2;
+                    $scope.request_redraw[0] = 0;
+                }
+            });
+        };
+
+        interval = setInterval(redraw, $scope.redraw_sleep);
     })
 
     .factory("$socketio", function($rootScope) {
@@ -80,13 +81,13 @@ angular.module('wavefrontweb', [])
                 // https://github.com/mbostock/d3/blob/master/src/time/scale.js
                 var time_scaleLocalFormats = [
                     [d3.time.format.utc("%Y"), true],
-                    [d3.time.format.utc("%B"), function(d) { return d.getMonth(); }],
-                    [d3.time.format.utc("%b %d"), function(d) { return d.getDate() != 1; }],
-                    [d3.time.format.utc("%a %d"), function(d) { return d.getDay() && d.getDate() != 1; }],
-                    [d3.time.format.utc("%H:%M"), function(d) { return d.getHours(); }],
-                    [d3.time.format.utc("%H:%M"), function(d) { return d.getMinutes(); }],
-                    [d3.time.format.utc(":%S"), function(d) { return d.getSeconds(); }],
-                    [d3.time.format.utc(".%L"), function(d) { return d.getMilliseconds(); }]
+                    [d3.time.format.utc("%B"), function(d) { return d.getUTCMonth(); }],
+                    [d3.time.format.utc("%b %d"), function(d) { return d.getUTCDate() != 1; }],
+                    [d3.time.format.utc("%a %d"), function(d) { return d.getUTCDay() && d.getUTCDate() != 1; }],
+                    [d3.time.format.utc("%H:%M"), function(d) { return d.getUTCHours(); }],
+                    [d3.time.format.utc("%H:%M"), function(d) { return d.getUTCMinutes(); }],
+                    [d3.time.format.utc(":%S"), function(d) { return d.getUTCSeconds(); }],
+                    [d3.time.format.utc(".%L"), function(d) { return d.getUTCMilliseconds(); }]
                 ];
 
                 function d3_time_scaleFormat(formats) {
@@ -126,15 +127,20 @@ angular.module('wavefrontweb', [])
                             nsamples: bin.nsamples
                         };
                         $scope.data.push(bin);
+                        var bincnt = Math.floor(twin / tbin);
+                        if ($scope.data.length > bincnt) {
+                            $scope.data.splice(0,1);
+                        }
                         $scope.request_redraw[0] = 1;
                     }
                 });
 
                 $socketio.emit('subscribe', [$attr.srcname, twin, tbin, _hash()]);
 
-                var margin = {top: 20, right: 20, bottom: 30, left: 50},
-                    width = parseInt($attr.width) - margin.left - margin.right,
-                    height = parseInt($attr.height) - margin.top - margin.bottom;
+                var 
+                    margin = {top: 16, right: 5, bottom: 3, left: 50},
+                    width = parseInt($attr.width - margin.left - margin.right),
+                    height = parseInt($attr.height - margin.top - margin.bottom);
 
                 // var parseDate = d3.time.format("%Y%m%d").parse;
 
@@ -147,12 +153,14 @@ angular.module('wavefrontweb', [])
 
                 var xAxis = d3.svg.axis()
                     .scale(x)
-                    .orient("bottom")
+                    .orient("top")
+                    .tickSize(height)
                     .tickFormat(d3_time_scaleFormat(time_scaleLocalFormats));
 
                 var yAxis = d3.svg.axis()
                     .scale(y)
-                    .orient("left");
+                    .orient("left")
+                    .tickSize(-width);
 
                 $scope.$watch('redraw', function(oldLen, newLen) {
                     var data = $scope.data;
@@ -171,9 +179,31 @@ angular.module('wavefrontweb', [])
 
                     var svg = d3.select($element[0]).append("svg")
                         .attr("width", width + margin.left + margin.right)
-                        .attr("height", height + margin.top + margin.bottom)
-                      .append("g")
-                        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+                        .attr("height", height + margin.top + margin.bottom);
+
+                    var zoom = d3.behavior.zoom()
+                    /*    .x(x) */
+                    //    .y(y)
+                    /*    .scaleExtent([-2, 0]) */
+                        .on("zoom", zoomed);
+
+                    function zoomed() {
+                        svg.select("path.area").attr("d", area);
+                        svg.select("path.line").attr("d", line);
+                        svg.select(".x.axis").call(xAxis);
+                        svg.select(".y.axis").call(yAxis);
+                    }                    
+
+                    svg.append('rect')
+                            .attr("width", width + margin.left + margin.right)
+                            .attr("height", height + margin.top + margin.bottom)
+                            .attr("x", 0)
+                            .attr("y", 0)
+                            .attr("class", "background");
+
+                    svg = svg.append("g")
+                            .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+                            .call(zoom);
 
                     // fix this; do we need to iterate data even?
                     // does this modify in place?
@@ -184,10 +214,15 @@ angular.module('wavefrontweb', [])
                     // });
 
                     x.domain(d3.extent(data, function(d) { return d.timestamp; }));
-                    y.domain([d3.min(data, function(d) { return d.min; }), 
+                    y.domain([d3.min(data, function(d) { return d.min; }),
                               d3.max(data, function(d) { return d.max; })]);
 
-                    var height_f =  function(d) { 
+                    zoom.x(x);
+                    //y.nice();
+
+                    yAxis.tickValues(y.ticks(3));
+
+                    var height_f =  function(d) {
                         var ydmax = y(d.max);
                         var ydmin = y(d.min);
                         var diff = ydmin - ydmax;
@@ -195,7 +230,7 @@ angular.module('wavefrontweb', [])
                     };
 
 /*
-                    svg.selectAll(".bar")
+                    g.selectAll(".bar")
                             .data(data)
                         .enter().append("rect")
                             .attr("class", "bar")
@@ -229,18 +264,22 @@ angular.module('wavefrontweb', [])
 
                     svg.append("g")
                         .attr("class", "x axis")
-                        .attr("transform", "translate(0," + height + ")")
+                        .attr("transform", "translate(0," + (height)  + ")")
+/*                        .attr("transform", "translate(0,0)") */
+/*                        .attr("x", 0) */
+/*                        .attr("y", 0) */
                         .call(xAxis);
 
                     svg.append("g")
-                            .attr("class", "y axis")
-                            .call(yAxis)
-                        .append("text")
-                            .attr("transform", "rotate(-90)")
-                            .attr("y", 6)
-                            .attr("dy", ".71em")
-                            .style("text-anchor", "end")
-                            .text("Amplitude");
+                        .attr("class", "y axis")
+/*                        .attr("transform", "translate(" + (50)  + ",0)") */
+                        .call(yAxis);
+/*                        .append("text")
+                        .attr("transform", "rotate(-90)")
+                        .attr("y", 6)
+                        .attr("dy", ".71em")
+                        .style("text-anchor", "end")
+                        .text("Amplitude"); */
                 });
             }
         }

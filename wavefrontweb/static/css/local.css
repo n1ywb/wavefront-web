@@ -1,21 +1,24 @@
 /* http://bl.ocks.org/mbostock/3884914 */
 
 body {
-  font: 10px sans-serif;
-  background-color:blue;
-  color: white;
+  font: 12px sans-serif;
+  background-color:black; 
+  color: whitesmoke;
 }
 
+.axis {
+  fill: WhiteSmoke  ;
+/*  opacity: 0.75; */
+  font-weight:bold;
+  /*background-color:black;  */
+}
 .axis path,
 .axis line {
   fill: none;
-  stroke: #000;
-  shape-rendering: crispEdges;
-}
-
-.axis text {
-	color: white;
-	fill: white;
+  stroke: WhiteSmoke  ;
+  opacity: 1.0;
+  stroke-width: 1px;
+/*  shape-rendering: crispEdges; */
 }
 
 .x.axis path {
@@ -23,13 +26,17 @@ body {
 }
 
 .area {
-  fill: yellow;
+  fill: Gold;
 }
 
 .line {
   fill: none;
   stroke: black;
-  stroke-width: 0.5px;
+  stroke-width: 0.6px;
+}
+
+.background {
+  fill: darkblue;
 }
 
 .bar {
@@ -41,9 +48,7 @@ body {
 /* opacity:0.4; */
 }
 
-.axis text {
-  font: 10px sans-serif;
-  color: white;
+.axis {
+  /*background-color:black;  */
 }
-
 
