@@ -118,18 +118,26 @@ angular.module('wavefrontweb', [])
                     for (binidx in data.update) {
                         bin = data.update[binidx]
                         /* console.log("Update: " + JSON.stringify([_hash(), bin])); */
-                        timestamp = new Date(bin.timestamp * 1000);
-                        bin = {
-                            timestamp: timestamp,
+                        timestamp = 
+                        bin1 = {
+                            timestamp: new Date((bin.timestamp - tbin / 2) * 1000),
                             max: bin.max,
                             min: bin.min,
                             mean: bin.mean,
                             nsamples: bin.nsamples
                         };
-                        $scope.data.push(bin);
+                        bin2 = {
+                            timestamp: new Date((bin.timestamp + tbin / 2) * 1000),
+                            max: bin.max,
+                            min: bin.min,
+                            mean: bin.mean,
+                            nsamples: bin.nsamples
+                        };
+                        $scope.data.push(bin1);
+                        $scope.data.push(bin2);
                         var bincnt = Math.floor(twin / tbin);
-                        if ($scope.data.length > bincnt) {
-                            $scope.data.splice(0,1);
+                        if ($scope.data.length > bincnt * 2) {
+                            $scope.data.splice(0,2)
                         }
                         $scope.request_redraw[0] = 1;
                     }
