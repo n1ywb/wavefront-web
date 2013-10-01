@@ -1,7 +1,7 @@
 /* http://bl.ocks.org/mbostock/3884914 */
 
 body {
-  font: 12px sans-serif;
+  font: 10px sans-serif;
   background-color:black; 
   color: whitesmoke;
 }
@@ -9,7 +9,7 @@ body {
 .axis {
   fill: WhiteSmoke  ;
 /*  opacity: 0.75; */
-  font-weight:bold;
+/*  font-weight:bold; */
   /*background-color:black;  */
 }
 .axis path,
