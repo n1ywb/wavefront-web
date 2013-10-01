@@ -149,7 +149,7 @@ angular.module('wavefrontweb', [])
 
                 var areaNode = svg
                     .append('g')
-//                            .attr("clip-path", "url(#clip)")
+                            .attr("clip-path", "url(#clip)")
                         .append("path")
                             .datum(data)
                             .attr("class", "area");
@@ -170,8 +170,65 @@ angular.module('wavefrontweb', [])
                     .attr("class", "y axis")
                     .call(yAxis);
 
+                var before = new Date();
+                var interval_sleep = tbin * 1000 * 1.1;
+                var new_data = true;
+
+                function on_interval() {
+                    // move this back to ng controller?
+                    // that has a negative performance impact due to the mass update
+                    console.log("Interval fired");
+
+                    var transdur = 0;
+                    
+                    // call in interval loop
+                    var x_extent = d3.extent(data, function(d) { return d.timestamp; })
+                    // x.domain(x_extent);
+                    // change to now-twin, now
+                    var now = new Date()
+                    var tshift = new Date(x_extent[0].getTime() - (now.getTime() - before.getTime()) * 0.8);
+                    before = now;
+                    var tr =  x(tshift);
+                    x.domain([now-twin*1000,now]);
+                    // console.log("Tr: " + tr);
+                    lineNode.transition()
+                        .duration(transdur)
+                        .ease("linear")
+                        .attr("transform", "translate(" + tr + ")");
+                    areaNode.transition()
+                        .duration(transdur)
+                        .ease("linear")
+                        .attr("transform", "translate(" + tr + ")");
+                    xAxisNode.transition()
+                        .duration(transdur)
+                        .ease('linear')
+                        .call(xAxis);
+
+                    yAxisNode.transition()
+                        .duration(transdur)
+                        .ease('linear')
+                        .call(yAxis);
+
+                }
+
+                var interval_loop;
+
                 function on_new_data() {
+                    // make it so this doesn't actually draw anything
+                    // orly?
+                    new_data = true;
+
                     // console.log("Redraw watch fired");
+                    // cancel and restart interval every time
+                    // if interval loop is not undefined
+                    // cancel interval
+                    // set interval
+                    if (interval_loop != undefined) clearInterval(interval_loop);
+
+//                    var x_extent = d3.extent(data, function(d) { return d.timestamp; })
+                    var now = new Date()
+
+                    x.domain([now-twin*1000,now]);
 
                     // call on new data
                     y.domain([d3.min(data, function(d) { return d.min; }),
@@ -183,59 +240,27 @@ angular.module('wavefrontweb', [])
                     yAxis.tickValues(y.ticks(3));
 
                     // call on new data
+                    // do we need to retranslate x? and maybe the scale too? to get everythign realigned?
                     areaNode.attr("d", area).attr("transform", null);
                     lineNode.attr("d", line).attr("transform", null);
-                }
 
-                var interval_sleep = 5000;
-
-                var before = new Date();
-
-                function on_interval() {
-                    var transdur = 0;
-
-                    // call in interval loop
-                    var x_extent = d3.extent(data, function(d) { return d.timestamp; })
-                    // x.domain(x_extent);
-                    // change to now-twin, now
-                    var now = new Date()
-
-                    x.domain([now-twin*1000,now]);
-
-                    // call in interval loop
-                    var tshift = new Date(x_extent[0].getTime() - (now.getTime() - before.getTime()));
-                    var tr =  x(tshift);
-                    before = now;
-
-                    // console.log("Tr: " + tr);
-                    lineNode.transition()
-                        .duration(transdur)
-//                        .ease("linear")
-                        .attr("transform", "translate(" + tr + ")");
-
-                    areaNode.transition()
-                        .duration(transdur)
-//                        .ease("linear")
-                        .attr("transform", "translate(" + tr + ")");
-
-                    xAxisNode.transition()
-                        .duration(transdur)
-//                        .ease('linear')
+                    xAxisNode
                         .call(xAxis);
 
-                    yAxisNode.transition()
-                        .duration(transdur)
-//                        .ease('linear')
+                    yAxisNode
                         .call(yAxis);
 
-                }
+                    interval_loop = setInterval(on_interval, interval_sleep);
+                    // if you're animating you want to call this
+//                    on_interval();
+                 }
 
                 function on_update(pkt) {
                     if (pkt == undefined) {
                         console.error("pkt undefined");
                         return;
                     }
-                    console.log("Update " + _hash() + " len " + String(pkt.update.length))
+                    console.log("Update " + _hash() + " len " + String(pkt.update.length), String(Date(pkt.update[0].timestamp * 1000)))
                     for (binidx in pkt.update) {
                         var bin = pkt.update[binidx]
                         /* console.log("Update: " + JSON.stringify([_hash(), bin])); */
@@ -268,8 +293,6 @@ angular.module('wavefrontweb', [])
                 $socketio.on('error_' + _hash(), function(ename, emsg) {
                     console.log(ename + ": " + emsg);
                 });
-
-                setInterval(on_interval, interval_sleep);
 
                 $socketio.emit('subscribe', [$attr.srcname, twin, tbin, _hash()]);
             }
