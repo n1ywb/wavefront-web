@@ -147,18 +147,9 @@ angular.module('wavefrontweb', [])
                     .orient("left")
                     .tickSize(-width);
 
-                var xAxisNode = svg.append("g")
-                    .attr("class", "x axis")
-                    .attr("transform", "translate(0," + (height)  + ")")
-                    .call(xAxis);
-
-                var yAxisNode = svg.append("g")
-                    .attr("class", "y axis")
-                    .call(yAxis);
-
                 var areaNode = svg
                     .append('g')
-                            .attr("clip-path", "url(#clip)")
+//                            .attr("clip-path", "url(#clip)")
                         .append("path")
                             .datum(data)
                             .attr("class", "area");
@@ -170,33 +161,72 @@ angular.module('wavefrontweb', [])
                             .datum(data)
                             .attr("class", "line");
 
-                function redraw() {
+                var xAxisNode = svg.append("g")
+                    .attr("class", "x axis")
+                    .attr("transform", "translate(0," + (height)  + ")")
+                    .call(xAxis);
+
+                var yAxisNode = svg.append("g")
+                    .attr("class", "y axis")
+                    .call(yAxis);
+
+                function on_new_data() {
                     // console.log("Redraw watch fired");
 
-                    var x_extent = d3.extent(data, function(d) { return d.timestamp; })
-                    x.domain(x_extent);
+                    // call on new data
                     y.domain([d3.min(data, function(d) { return d.min; }),
                               d3.max(data, function(d) { return d.max; })]);
 
+                    // when to call these?
                     zoom.x(x);
                     //y.nice();
-
                     yAxis.tickValues(y.ticks(3));
 
+                    // call on new data
                     areaNode.attr("d", area).attr("transform", null);
                     lineNode.attr("d", line).attr("transform", null);
+                }
 
-                    var tr = x(x_extent[0] - tbin * 1000);
+                var interval_sleep = 5000;
+
+                var before = new Date();
+
+                function on_interval() {
+                    var transdur = 0;
+
+                    // call in interval loop
+                    var x_extent = d3.extent(data, function(d) { return d.timestamp; })
+                    // x.domain(x_extent);
+                    // change to now-twin, now
+                    var now = new Date()
+
+                    x.domain([now-twin*1000,now]);
+
+                    // call in interval loop
+                    var tshift = new Date(x_extent[0].getTime() - (now.getTime() - before.getTime()));
+                    var tr =  x(tshift);
+                    before = now;
+
                     // console.log("Tr: " + tr);
                     lineNode.transition()
-                        .ease("linear")
-                        .attr("transform", "translate(" + tr + ")");
-                    areaNode.transition()
-                        .ease("linear")
+                        .duration(transdur)
+//                        .ease("linear")
                         .attr("transform", "translate(" + tr + ")");
 
-                    xAxisNode.transition().ease('linear').call(xAxis);
-                    yAxisNode.transition().ease('linear').call(yAxis);
+                    areaNode.transition()
+                        .duration(transdur)
+//                        .ease("linear")
+                        .attr("transform", "translate(" + tr + ")");
+
+                    xAxisNode.transition()
+                        .duration(transdur)
+//                        .ease('linear')
+                        .call(xAxis);
+
+                    yAxisNode.transition()
+                        .duration(transdur)
+//                        .ease('linear')
+                        .call(yAxis);
 
                 }
 
@@ -230,7 +260,7 @@ angular.module('wavefrontweb', [])
                             data.splice(0,2)
                         }
                     }
-                    redraw();
+                    on_new_data();
                 }
 
                 $socketio.on('update_' + _hash(), on_update);
@@ -238,6 +268,8 @@ angular.module('wavefrontweb', [])
                 $socketio.on('error_' + _hash(), function(ename, emsg) {
                     console.log(ename + ": " + emsg);
                 });
+
+                setInterval(on_interval, interval_sleep);
 
                 $socketio.emit('subscribe', [$attr.srcname, twin, tbin, _hash()]);
             }
