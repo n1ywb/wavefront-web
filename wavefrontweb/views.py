@@ -64,7 +64,7 @@ class WavefrontNamespace(BaseNamespace):
                             updates.extend(queue.get())
                             for n in xrange(64):
                                 #gevent.sleep(1)
-                                updates.extend(queue.get(timeout=10))
+                                updates.extend(queue.get(timeout=1))
                         except Empty:
                             pass
                         if len(updates) > 0:
@@ -91,6 +91,15 @@ def my_view(request):
 
 @view_config(route_name='foo', renderer='templates/foo.html')
 def my_view2(request):
+#    try:
+#        one = DBSession.query(MyModel).filter(MyModel.name == 'one').first()
+#    except DBAPIError:
+#        return Response(conn_err_msg, content_type='text/plain', status_int=500)
+#    return {'one': one, 'project': 'wavefront-web'}
+    return {'project': 'wavefront-web'}
+
+@view_config(route_name='awesome', renderer='templates/awesome.html')
+def my_view3(request):
 #    try:
 #        one = DBSession.query(MyModel).filter(MyModel.name == 'one').first()
 #    except DBAPIError:

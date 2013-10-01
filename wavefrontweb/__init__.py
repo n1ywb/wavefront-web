@@ -73,6 +73,7 @@ for src in srcs:
     orb.add_binner(src, twin=86400.0, tbin=240.0)
     orb.add_binner(src, twin=7200.0, tbin=20.0)
 
+orb.add_binner('TA_058A_BHZ', twin=600.0, tbin=1.0)
 
 wfcontroller.start()
 
@@ -85,6 +86,7 @@ def main(global_config, **settings):
     config = Configurator(settings=settings)
     config.add_renderer('.html', "pyramid.mako_templating.renderer_factory")
     config.add_static_view('static', 'static', cache_max_age=3600)
+    config.add_route('awesome', '/awesome')
     config.add_route('foo', '/foo')
     config.add_route('home', '/')
     config.add_route('socketio', 'socket.io/*remaining')

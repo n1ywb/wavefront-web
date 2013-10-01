@@ -171,8 +171,9 @@ angular.module('wavefrontweb', [])
                     .call(yAxis);
 
                 var before = new Date();
-                var interval_sleep = tbin * 1000 * 1.1;
+                var interval_sleep = tbin * 1000 * 1.0;
                 var new_data = true;
+                var icount = 0;
 
                 function on_interval() {
                     // move this back to ng controller?
@@ -185,11 +186,21 @@ angular.module('wavefrontweb', [])
                     var x_extent = d3.extent(data, function(d) { return d.timestamp; })
                     // x.domain(x_extent);
                     // change to now-twin, now
-                    var now = new Date()
-                    var tshift = new Date(x_extent[0].getTime() - (now.getTime() - before.getTime()) * 0.8);
-                    before = now;
-                    var tr =  x(tshift);
+                    var now = new Date();
                     x.domain([now-twin*1000,now]);
+
+                    // It would be better to calculate the exact tshift.  This
+                    // approach assumes that the interval timing is accurate,
+                    // which it probably is not.
+                    var tshift = (now - twin * 1000 - tbin * 1000 * ++icount);
+
+                    // This freezes the wf
+                    //var tshift = (now - twin * 1000);
+
+                    // this imposes a mysterious and undesireable X offset
+                    // var tshift = (now - (twin * 1000) - 1000);// - ((now - x_extent[1])/(tbin * 1000)));
+                    var tr =  x(tshift);
+
                     // console.log("Tr: " + tr);
                     lineNode.transition()
                         .duration(transdur)
@@ -224,6 +235,7 @@ angular.module('wavefrontweb', [])
                     // cancel interval
                     // set interval
                     if (interval_loop != undefined) clearInterval(interval_loop);
+                    icount = 0;
 
 //                    var x_extent = d3.extent(data, function(d) { return d.timestamp; })
                     var now = new Date()
